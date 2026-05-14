@@ -19,5 +19,5 @@ Route::put('/transactions/{transaction}',[TransactionController::class,'update']
 Route::delete('/transactions/{transaction}',[TransactionController::class,'destroy'])->name('transactions.destroy');
 
 
-
+Route::get('/transactions/dashboard',[TransactionController::class,'dashboard'])->name('transaction.dashboard');
 

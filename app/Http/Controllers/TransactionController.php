@@ -12,12 +12,43 @@ class TransactionController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         //
-        $transaction = Transaction::orderBy('created_at','desc')->get();
 
-        return view('transactions.index', ['transaction' => $transaction]);
+        $search = $request->search;
+        $type = $request->type;
+        $date = $request->date;
+
+        $transaction = Transaction::orderBy('created_at','desc');
+
+
+        // search
+
+        if ($search) {
+
+        $transaction->where(function($query) use ($search) {
+
+        $query->where('title', 'like', "%$search%")
+        ->orWhere('category', 'like', "%$search%")
+        ->orWhere('type', 'like', "%$search%");
+        });
+        }
+
+        // filter
+        if($type){
+
+        $transaction->where('type',$type);
+        }
+
+           // FILTER DATE 
+    if ($date) {
+        $transaction->whereDate('date', $date);
+    }
+
+        $transaction = $transaction->paginate(5);
+
+        return view('transactions.index', ['transactions' => $transaction]);
     }
 
     /**
@@ -41,6 +72,7 @@ class TransactionController extends Controller
         'amount' => 'required',
         'type' => 'required',
         'category' => 'required',
+        'date' => 'required',
         ]);
         if ($validator->fails()){
             return redirect(route('transactions.create'))->withErrors($validator)->withInput();
@@ -51,18 +83,30 @@ class TransactionController extends Controller
         $transaction->amount = $request->amount;
         $transaction->type = $request->type;
         $transaction->category = $request->category;
+        $transaction->date = $request->date;
         $transaction->save();
 
-        return redirect(route('transactions.create'))->with('success','Transaction Created Successfully');
+        return redirect(route('transactions.index'))->with('success','Transaction Created Successfully');
 
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Transaction $transaction)
+    public function dashboard()
     {
         //
+        $income = Transaction::where('type', 'income')->sum('amount');
+
+        $expense = Transaction::where('type', 'expense')->sum('amount');
+
+        $balance = $income - $expense;
+
+        return view('transactions.dashboard', [
+            'income' => $income,
+            'expense' => $expense,
+            'balance' => $balance,
+        ]);
     }
 
     /**
